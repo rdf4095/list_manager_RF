@@ -1,16 +1,19 @@
 """
 program: main.py
 
-purpose: Implement a to-do list
+purpose: Implement a list manager
 
-comments: 
+comments: There are two toplevel windows, one to create the list and 
+          one to display it, formatted.
 
 author: Russell Folks
 
 history:
 -------
 09-20-2024  creation
-09-30-2024  Add second toplevel window.
+09-30-2024  Add second toplevel window, top2.
+10-04-2024  Refine top2. Rename sort_cat to move_text. Add line separator in
+            the output. Remove old comments and print()s.
 """
 """
 TODO: - put spacing rules for Tk widgets into a cnf dict.
@@ -22,49 +25,51 @@ from importlib.machinery import SourceFileLoader
 msel = SourceFileLoader("ui_multi_select", "../ui_RF/ui_multi_select.py").load_module()
 sttk = SourceFileLoader("styles_ttk", "../styles/styles_ttk.py").load_module()
 
-def sort_cat():
-    print(f'in sort_cat')
+def opt_fxn():
+    move_text(item_rows)
 
-    # get data
-    # --------
-    category_list = [item.winfo_children()[0].get() for item in item_rows]
-    text_list = [item.winfo_children()[1].get() for item in item_rows]
 
-    # report data found
-    # -----------
-    print(f'cbox values: {category_list}')
-    print(f'entry items: {text_list}')
-    print(f'    items: {len(text_list)}')
+def move_text(source):
+    # get text
+    # category_list = [item.winfo_children()[0].get() for item in item_rows]
+    # text_list = [item.winfo_children()[1].get() for item in item_rows]
+    category_list = [item.winfo_children()[0].get() for item in source]
+    text_list = [item.winfo_children()[1].get() for item in source]
 
-    # i1 = item_rows[0]
-    # print(f'i1[0] is {type(i1.winfo_children()[0])}')
-    # the Combobox:
-    # print(f'item_rows[0] is {type(item_rows[0].winfo_children()[0])}')
-
-    # print(f'    .winfo_children()[0] holds {i1.winfo_children()[0].get()}')
-    # print(f'i1[1] is {type(i1.winfo_children()[1])}')
-    # print(f'    .winfo_children()[1] holds {i1.winfo_children()[1].get()}')
-
-    # put data in output window
-    # --------
+    # put text in output window
     text_main.delete('1.0', 'end')
-    for n, i in enumerate(text_list):
-        # sanity check
-        # print(f'n: {n}, i: {i}')
+    linenum = 1
+    for n, i in enumerate(category_list):
+        # st = str(n+1) + "-" + i +  ": " + text_list[n]
 
-        st = str(n) + ": " + i
-        # end_point = text_main.index('end')
-        # insert_point = end_point + ' + 1c'
+        # end_pt = text_main.index('end')
+        # insert_pt = end_pt + ' + 1c'
+        separator = '--'
 
-        text_main.insert('end', st)
-        text_main.insert('end', '\n')
-                         
+        # if i != '' and text_list[n] != '':
+        #     text_main.insert('end', st)
+        #     text_main.insert('end', '\n')
+        # else:
+        #     text_main.insert('end', '\n')
+        if i == '':
+            if text_list[n] == '':
+                text_main.insert('end', '\n')
+            else:
+                if text_list[n] == '-':
+                    text_main.insert('end', separator)
+                    text_main.insert('end', '\n')
+        else:
+            if text_list[n] != '':
+                st = str(linenum) + "-" + i +  ": " + text_list[n]
+                text_main.insert('end', st)
+                text_main.insert('end', '\n')
+                linenum += 1
+
 
 # Module scope objects
 # ====================
 root = tk.Tk()
 root.title('list manager')
-# root.geometry('400x300')
 
 sttk.CreateStyles()
 
@@ -75,26 +80,26 @@ filt_entries = []
 filt_buttons_add = []
 filt_buttons_subt = []
 
-# in the current version, this isn't used
-windows = {'one': None, 'two': None}
+# used in ui_multi_select functions, but
+# not needed for this app
+# windows = {'one': None, 'two': None}
 
 data_columns = ['home', 'work', 'hobby']
 my_fxn = None
-data_1 = None
 
 main_lab = ttk.Label(root, foreground='blue', border=2, text='Create List')
-main_lab.pack(anchor='w')
+main_lab.pack(anchor='w', padx=5)
 
 main_list_fr = ttk.Frame(root, border=2)
 
-text1 = ttk.Label(root, background='#ff0', text='build list')
-text1.pack(anchor='n')
+# text1 = ttk.Label(root, background='#ff0', text='build list')
+# text1.pack(anchor='n')
 
+category_label = ttk.Label(root, background='#ff0', text='category')
+category_label.pack(anchor='w', padx=15)
 
-
-rowframe = msel.create_selection_row(windows)
+rowframe = msel.create_selection_row()
 rowframe.grid(row=0, column=0, sticky='nw')
-
 
 filt_cboxes.append(rowframe.winfo_children()[0])
 filt_entries.append(rowframe.winfo_children()[1])
@@ -103,9 +108,11 @@ filt_buttons_add.append(rowframe.winfo_children()[3])
 
 item_rows.append(rowframe)
 
-main_list_fr.pack(padx=10, pady=10, ipadx=5, ipady=5)
+main_list_fr.pack(padx=10, ipadx=5, ipady=5)
 
-btn_sort = ttk.Button(root, text='Sort Category', command=sort_cat)
+btn_sort = ttk.Button(root,
+                      text='Move Text',
+                      command=lambda src=item_rows: move_text(src))
 btn_sort.configure(style='MyButton1.TButton')
 btn_sort.pack(anchor='s', pady=10)
 
@@ -114,28 +121,39 @@ btnq.configure(style='MyButton1.TButton')
 btnq.pack(anchor='s', pady=10)
 
 root.update()
-print(f'root geometry: {root.geometry()}')
+rgeom = root.geometry()
+# print(f'root geometry: {rgeom}')
+geom_str = rgeom.split('x')
+win_wd = geom_str[0]
+win_ht = geom_str[1].split('+')[0]
+# print(f'root width/height: {win_wd}, {win_ht}')
+
+win_hoff = geom_str[1].split('+')[1]
+win_voff = geom_str[1].split('+')[2]
+# print(f'root h,v offsets: {win_hoff}, {win_voff}')
 
 # Toplevel window 2
 # -----------------
-top2 = tk.Toplevel(root)
-top2.geometry("+200+200")
+top2 = tk.Toplevel()
+top2.title('list viewer')
+# top2.geometry("+300+250")
+top2_h_offset = str(int(win_wd) + int(win_hoff))
+top2_v_offset = win_ht
+top2_offs_str = "+" + top2_h_offset + "+" + top2_v_offset
+# print(top2_offs_str)
+top2.geometry(top2_offs_str)
 
-frm1_2 = ttk.LabelFrame(top2, text="Formatted List")
-frm1_2.pack(padx=5, pady=5)
+# options_fr = ttk.Frame(frm1_2, relief='groove')
+# options_fr.pack(padx=5, pady=5, ipadx=5, ipady=5)
 
-win_label = ttk.Label(frm1_2, text="label frame",
-                     style="EntryLabel.TLabel")
-win_label.pack(padx=5, pady=5)
+# win_label = ttk.Label(options_fr, text="label frame",
+#                      style="EntryLabel.TLabel")
+# win_label.pack(padx=5, pady=5)
 
-output_1_fr = ttk.Frame(frm1_2)
-output_1_fr.pack(padx=5, pady=5)
+main_fr = ttk.LabelFrame(top2, text="Formatted List")
+main_fr.pack(padx=5, pady=5)
 
-st_entry = ttk.Entry(output_1_fr, name="studio")
-st_entry.pack(padx=5, pady=5)
-
-text_main = tk.Text(output_1_fr, width=40, height=10, background='#ffa')
+text_main = tk.Text(main_fr, width=40, height=10, background='#ffa')
 text_main.pack(padx=5, pady=5)
-
 
 root.mainloop()

@@ -1,7 +1,7 @@
 # list_manager_RF
 
 This application is for interactive creation and formatting of small lists.
-It is more formal than necessary for the purppose, but demonstrates communication between
+It is more formal than necessary for the purpose, but demonstrates communication between
 toplevel windows, and moving textual information from one kind of widget to another.
 
 There are no program dependencies except, on linux you may need to install tkinter.

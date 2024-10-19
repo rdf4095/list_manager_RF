@@ -18,10 +18,13 @@ history:
             Remove debug print statements and unused variables (already 
             commented out).
 10-11-2024  Add function sort_category to resort output text by item category.
+10-18-2024  Remove counter from enumerate in sort_category(). Test functions
+            passed to the msel module. Remove inactive code.
+10-19-2024  Add flag 'use_pandas' for the UI code. Update the associated 
+            README.md file.
 """
 """
-TODO: - put common spacing rules for pack() into a cnf dict.
-      - get contents of Text widget text_main.
+TODO: - put common pack() spacing into a cnf dict.
 """
 import tkinter as tk
 from tkinter import ttk
@@ -60,8 +63,6 @@ def move_text(source: list) -> None:
                 text_main.insert('end', '\n')
                 linenum += 1
 
-    # print(f'text_main is a{type(text_main)}')
-    
 
 def sort_category():
     """Sort text by item category."""
@@ -74,8 +75,9 @@ def sort_category():
     # print(f'line 1:\n{line_list[0]}')
 
     # test    
-    # this is crude. regex is a better tool, but trades off complexity.
-    # category_list = [line.split('-')[1].split(':')[0] for line in line_list[:-1]]
+    # regex is a better tool, but trades off complexity.
+    category_list = [line.split('-')[1].split(':')[0] for line in line_list[:-1]]
+    print(f'category_list: {category_list}')
     # print(f'first line category:\n{category_list[0]}')
 
     line_list_unnum = [line.split('-')[1] for line in line_list[:-1]]
@@ -88,28 +90,12 @@ def sort_category():
     # replace output with sorted list
     text_main.delete('1.0', 'end')
     linenum = 1
-    # works; try it without the n
-    for n, i in enumerate(sort_cat_list):
-        # separator = '--'
 
-        # if i == '':
-        #     if text_list[n] == '':
-        #         text_main.insert('end', '\n')
-        #     else:
-        #         if text_list[n] == '-':
-        #             text_main.insert('end', separator)
-        #             text_main.insert('end', '\n')
-        # else:
-            # if text_list[n] != '':
-            #     st = str(linenum) + "-" + i +  ": " + text_list[n]
-            #     text_main.insert('end', st)
-            #     text_main.insert('end', '\n')
-            #     linenum += 1
-            # if text_list[n] != '':
-                st = str(linenum) + "-" + i
-                text_main.insert('end', st)
-                text_main.insert('end', '\n')
-                linenum += 1
+    for i in enumerate(sort_cat_list):
+        st = str(linenum) + "-" + i[1]
+        text_main.insert('end', st)
+        text_main.insert('end', '\n')
+        linenum += 1
 
 
 def option2():
@@ -123,6 +109,9 @@ root.title('list manager')
 
 sttk.CreateStyles()
 
+# flags
+use_pandas = False
+
 item_rows = []
 filt_cboxes = []
 filt_entries = []
@@ -130,7 +119,12 @@ filt_buttons_add = []
 filt_buttons_subt = []
 
 data_columns = ['home', 'work', 'hobby']
+
+# test functions passed to the imported module msel
 # my_fxn = None
+# def opt_fxn():
+#      print('in opt_fxn')
+
 
 main_lab = ttk.Label(root, foreground='blue', border=2, text='Create List')
 main_lab.pack(anchor='w', padx=5)

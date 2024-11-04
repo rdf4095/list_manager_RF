@@ -22,6 +22,8 @@ history:
             passed to the msel module. Remove inactive code.
 10-19-2024  Add flag 'use_pandas' for the UI code. Update the associated 
             README.md file.
+11-02-2024  Add arguments when calling msel.create_selection_row. i.e. don't 
+            depend on those values being found by msel.
 """
 """
 TODO: - put common pack() spacing into a cnf dict.
@@ -134,7 +136,7 @@ main_list_fr = ttk.Frame(root, border=2)
 category_label = ttk.Label(root, background='#ff0', text='category')
 category_label.pack(anchor='w', padx=15)
 
-rowframe = msel.create_selection_row()
+rowframe = msel.create_selection_row(main_list_fr, data_columns)
 rowframe.grid(row=0, column=0, sticky='nw')
 
 filt_cboxes.append(rowframe.winfo_children()[0])
@@ -193,6 +195,14 @@ text_main = tk.Text(main_fr, width=40, height=10, background='#ffa')
 text_main.pack(padx=5, pady=5)
 
 # print(f'item_rows[0] child 0 is {type(item_rows[0].winfo_children()[0])}')
+
+# optional: report function signatures.
+# import inspect
+
+# print('move_text:')
+# sig = (inspect.signature(move_text))
+# print(f'   signature: {sig}')
+
 
 if __name__ == "__main__":
     root.mainloop()

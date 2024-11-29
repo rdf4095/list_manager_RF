@@ -1,4 +1,5 @@
 # list_manager_RF
+
 ## PURPOSE
 This application is for interactive creation and formatting of small lists.
 It is more formal than necessary for the purpose, but demonstrates elements of 

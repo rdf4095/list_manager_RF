@@ -27,6 +27,7 @@ history:
 11-19-2024  Update the README file. Remove a few print statements.
 11-29-2024  Use ThemedTk. Change some variable names for clarity and
             consistency. Add set_window_offset() to position top2.
+11-29-2024  Recommit.
 """
 # TODO: put common pack() spacing into a cnf dict.
 # TODO: use LabelFrame in the root window, as it's used for the top2 window.

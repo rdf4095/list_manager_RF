@@ -24,13 +24,18 @@ history:
             README.md file.
 11-02-2024  Add arguments when calling msel.create_selection_row. i.e. don't 
             depend on those values being found by msel.
+11-19-2024  Update the README file. Remove a few print statements.
+11-29-2024  Use ThemedTk. Change some variable names for clarity and
+            consistency. Add set_window_offset() to position top2.
 """
-"""
-TODO: - put common pack() spacing into a cnf dict.
-"""
+# TODO: put common pack() spacing into a cnf dict.
+# TODO: use LabelFrame in the root window, as it's used for the top2 window.
+
 import tkinter as tk
 from tkinter import ttk
 from importlib.machinery import SourceFileLoader
+
+from ttkthemes import ThemedTk
 
 msel = SourceFileLoader("ui_multi_select", "../ui_RF/ui_multi_select.py").load_module()
 sttk = SourceFileLoader("styles_ttk", "../styles/styles_ttk.py").load_module()
@@ -38,8 +43,8 @@ sttk = SourceFileLoader("styles_ttk", "../styles/styles_ttk.py").load_module()
 def move_text(source: list) -> None:
     """Get text from widgets and move it to another toplevel window."""
 
-    category_list = [item.winfo_children()[0].get() for item in item_rows]
-    text_list = [item.winfo_children()[1].get() for item in item_rows]
+    # category_list = [item.winfo_children()[0].get() for item in item_rows]
+    # text_list = [item.winfo_children()[1].get() for item in item_rows]
 
     text_main = top2.winfo_children()[0].winfo_children()[0]
 
@@ -71,10 +76,8 @@ def sort_category():
     print('in option1')
     
     alltext = text_main.get('1.0', 'end-1c')
-    # print(f'alltext:\n{alltext}')
 
     line_list = alltext.split('\n')
-    # print(f'line 1:\n{line_list[0]}')
 
     # test    
     # regex is a better tool, but trades off complexity.
@@ -101,17 +104,33 @@ def sort_category():
 
 
 def option2():
+    # future
     print('in option2')
+
+
+def set_window_offset(reference):
+    """Calculate window position, as an x-y offset from 'reference'  window."""
+    top2_width = reference[0]
+    top2_height = reference[1].split('+')[0]
+    h_offset = reference[1].split('+')[1]
+    # v_offset = reference[1].split('+')[2]
+
+    top2_h_offset = str(int(top2_width) + int(h_offset))
+    top2_v_offset = top2_height
+
+    # offset_string = "+" + top2_h_offset + "+" + top2_v_offset
+
+    return "+" + top2_h_offset + "+" + top2_v_offset
 
 
 # Module scope objects
 # ====================
-root = tk.Tk()
+root = ThemedTk()
 root.title('list manager')
 
-sttk.CreateStyles()
+sttk.create_styles()
 
-# flags
+# for how this flag might be used, see the project pandas_data_RF
 use_pandas = False
 
 item_rows = []
@@ -122,19 +141,19 @@ filt_buttons_subt = []
 
 data_columns = ['home', 'work', 'hobby']
 
-# test functions passed to the imported module msel
+# test passing of functions to the imported module msel
 # my_fxn = None
 # def opt_fxn():
 #      print('in opt_fxn')
 
-
 main_lab = ttk.Label(root, foreground='blue', border=2, text='Create List')
 main_lab.pack(anchor='w', padx=5)
 
-main_list_fr = ttk.Frame(root, border=2)
-
 category_label = ttk.Label(root, background='#ff0', text='category')
 category_label.pack(anchor='w', padx=15)
+
+main_list_fr = ttk.Frame(root, border=2)
+main_list_fr.pack(padx=10, ipadx=5, ipady=5)
 
 rowframe = msel.create_selection_row(main_list_fr, data_columns)
 rowframe.grid(row=0, column=0, sticky='nw')
@@ -145,8 +164,6 @@ filt_buttons_subt.append(rowframe.winfo_children()[2])
 filt_buttons_add.append(rowframe.winfo_children()[3])
 
 item_rows.append(rowframe)
-
-main_list_fr.pack(padx=10, ipadx=5, ipady=5)
 
 btn_sort = ttk.Button(root,
                       text='Move Text',
@@ -160,30 +177,22 @@ btnq.pack(anchor='s', pady=10)
 
 root.update()
 
-geom_str = root.geometry().split('x')
-win_wd = geom_str[0]
-win_ht = geom_str[1].split('+')[0]
-
-win_hoff = geom_str[1].split('+')[1]
-win_voff = geom_str[1].split('+')[2]
+root_geometry = root.geometry().split('x')
 
 # Toplevel window 2
 # =================
 top2 = tk.Toplevel()
 top2.title('list viewer')
 
-top2_h_offset = str(int(win_wd) + int(win_hoff))
-top2_v_offset = win_ht
-offset_string = "+" + top2_h_offset + "+" + top2_v_offset
-
-top2.geometry(offset_string)
+win2_offset = set_window_offset(root_geometry)
+top2.geometry(win2_offset)
 
 lab2 = ttk.Label(top2, text="Formatted List", style="LabelFrameText.TLabel")
 main_fr = ttk.LabelFrame(top2, labelwidget=lab2)
 main_fr.pack(padx=5, pady=5)
 
 options_fr = ttk.Frame(top2, relief='groove')
-options_fr.pack(padx=5, pady=5, ipadx=5, ipady=5)
+options_fr.pack(padx=5, pady=5)
 
 opt1_but = ttk.Button(options_fr, text="sort category", command=sort_category)
 opt1_but.pack(side='left', padx=5, pady=5)
@@ -202,7 +211,6 @@ text_main.pack(padx=5, pady=5)
 # print('move_text:')
 # sig = (inspect.signature(move_text))
 # print(f'   signature: {sig}')
-
 
 if __name__ == "__main__":
     root.mainloop()

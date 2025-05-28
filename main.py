@@ -28,9 +28,10 @@ history:
 11-29-2024  Use ThemedTk. Change some variable names for clarity and
             consistency. Add set_window_offset() to position top2.
 11-29-2024  Recommit.
+05-26-2025  Use code in ui_RF to handle the widget ui setup and interaction.
 """
 # TODO: put common pack() spacing into a cnf dict.
-# TODO: use LabelFrame in the root window, as it's used for the top2 window.
+# TODO: use LabelFrame in the root window, like it's used for the top2 window.
 
 import tkinter as tk
 from tkinter import ttk
@@ -38,15 +39,50 @@ from importlib.machinery import SourceFileLoader
 
 from ttkthemes import ThemedTk
 
-msel = SourceFileLoader("ui_multi_select", "../ui_RF/ui_multi_select.py").load_module()
+msel = SourceFileLoader("msel", "../ui_RF/ui_multi_select.py").load_module()
+toolf = SourceFileLoader("toolf", "../ui_RF/tool_frames.py").load_module()
 sttk = SourceFileLoader("styles_ttk", "../styles/styles_ttk.py").load_module()
 
-def move_text(source: list) -> None:
+def move_text_orig(source: list) -> None:
     """Get text from widgets and move it to another toplevel window."""
 
     # category_list = [item.winfo_children()[0].get() for item in item_rows]
     # text_list = [item.winfo_children()[1].get() for item in item_rows]
+    print('in move_text')
+    text_main = top2.winfo_children()[0].winfo_children()[0]
 
+    category_list = [item.winfo_children()[0].get() for item in source]
+    text_list = [item.winfo_children()[1].get() for item in source]
+
+    text_main.delete('1.0', 'end')
+    linenum = 1
+    for n, i in enumerate(category_list):
+        separator = '--'
+
+        if i == '':
+            if text_list[n] == '':
+                text_main.insert('end', '\n')
+            else:
+                if text_list[n] == '-':
+                    text_main.insert('end', separator)
+                    text_main.insert('end', '\n')
+        else:
+            if text_list[n] != '':
+                st = str(linenum) + "-" + i +  ": " + text_list[n]
+                text_main.insert('end', st)
+                text_main.insert('end', '\n')
+                linenum += 1
+
+
+def move_text() -> None:
+    """Get text from widgets and move it to another toplevel window."""
+
+    # category_list = [item.winfo_children()[0].get() for item in item_rows]
+    # text_list = [item.winfo_children()[1].get() for item in item_rows]
+    global main_list_fr
+    # source = root.winfo_children()[2]    # == main_list_fr
+    source = main_list_fr.winfo_children()
+    print(f'{source=}')
     text_main = top2.winfo_children()[0].winfo_children()[0]
 
     category_list = [item.winfo_children()[0].get() for item in source]
@@ -82,16 +118,16 @@ def sort_category():
 
     # test    
     # regex is a better tool, but trades off complexity.
-    category_list = [line.split('-')[1].split(':')[0] for line in line_list[:-1]]
-    print(f'category_list: {category_list}')
+    # category_list = [line.split('-')[1].split(':')[0] for line in line_list[:-1]]
+    # print(f'category_list: {category_list}')
     # print(f'first line category:\n{category_list[0]}')
 
     line_list_unnum = [line.split('-')[1] for line in line_list[:-1]]
-    print(f'lines, unnumbered:\n{line_list_unnum}')
-    print()
+    # print(f'lines, unnumbered:\n{line_list_unnum}')
+    # print()
 
     sort_cat_list = sorted(line_list_unnum)
-    print(f'lines, sorted:\n{sort_cat_list}')
+    # print(f'lines, sorted:\n{sort_cat_list}')
 
     # replace output with sorted list
     text_main.delete('1.0', 'end')
@@ -134,11 +170,12 @@ sttk.create_styles()
 # for how this flag might be used, see the project pandas_data_RF
 use_pandas = False
 
-item_rows = []
-filt_cboxes = []
-filt_entries = []
-filt_buttons_add = []
-filt_buttons_subt = []
+# item_rows = []
+
+# filt_cboxes = []
+# filt_entries = []
+# filt_buttons_add = []
+# filt_buttons_subt = []
 
 data_columns = ['home', 'work', 'hobby']
 
@@ -156,19 +193,40 @@ category_label.pack(anchor='w', padx=15)
 main_list_fr = ttk.Frame(root, border=2)
 main_list_fr.pack(padx=10, ipadx=5, ipady=5)
 
-rowframe = msel.create_selection_row(main_list_fr, data_columns)
-rowframe.grid(row=0, column=0, sticky='nw')
+rowframe = msel.init_selection_row(main_list_fr, data_columns)
 
-filt_cboxes.append(rowframe.winfo_children()[0])
-filt_entries.append(rowframe.winfo_children()[1])
-filt_buttons_subt.append(rowframe.winfo_children()[2])
-filt_buttons_add.append(rowframe.winfo_children()[3])
+# rowframe.grid(row=0, column=0, sticky='nw')
 
-item_rows.append(rowframe)
+# test ----------
+# rowframe = msel.ToolFrame(main_list_fr, name='row1', posn=[0, 0])
 
+# rowframe = msel.add_selection_row(None, main_list_fr, data_columns, None)
+
+#      debug
+# cbox_child1 = rowfr.winfo_children()[0]
+# print(f'cbox_child1 is {cbox_child1}')
+
+# cbox_1 = rowfr.cb
+# cboxes.append(cbox_1)
+# print(f'cbox_1 is {cbox_1}')
+# print(f'cbox_1 is {cbox_1.name}')
+#     end debug
+
+# ----------  end test
+
+# filt_cboxes.append(rowframe.winfo_children()[0])
+# filt_entries.append(rowframe.winfo_children()[1])
+# filt_buttons_subt.append(rowframe.winfo_children()[2])
+# filt_buttons_add.append(rowframe.winfo_children()[3])
+
+# item_rows.append(rowframe)
+
+# btn_sort = ttk.Button(root,
+#                       text='Move Text',
+#                       command=lambda srcc=rowframe.item_rows: move_text(srcc))
 btn_sort = ttk.Button(root,
                       text='Move Text',
-                      command=lambda src=item_rows: move_text(src))
+                      command=move_text)
 btn_sort.configure(style='MyButton1.TButton')
 btn_sort.pack(anchor='s', pady=10)
 

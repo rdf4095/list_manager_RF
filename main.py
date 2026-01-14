@@ -36,6 +36,7 @@ history:
 06-12-2025  Use utilities/tool_classes.py for widget classes.
 12-19-2025  Refactor get_list() to directly get text from all list widgets, as
             list of dicts; refactor move_text() to handle this list.
+01-14-2026  Code a method to sort text lines by category.
 """
 """
 TODO: 
@@ -98,8 +99,8 @@ def get_list(source: list) -> list:
     for row in rows:
         l = Lineitem(row[0].get(), row[1].get())
         the_list.append(l)
-    for lin in the_list:
-        print(f'    {lin.category}, {lin.text}')
+    # for lin in the_list:
+    #     print(f'    {lin.category}, {lin.text}')
 
     return the_list
 
@@ -142,6 +143,8 @@ def move_text_orig() -> None:
 
 def move_text() -> None:
     """Get text from widgets and move it to another toplevel window."""
+    # TODO: extract the code that puts text into window 2, into a function.
+    #       This is needed again for the sort.
     global main_list_fr
     global top2
 
@@ -153,14 +156,17 @@ def move_text() -> None:
     indicator = "--"
     separator = ": "
     raw_list = get_list(source)
-    output = []
+
+    if len(raw_list) == 1 and raw_list[0].text == '':
+        # no input
+        return
 
     # debug:
-    print('DEBUG:')
-    for n, lin in enumerate(raw_list):
-        print(f'    {n}{separator}{lin.category}, {lin.text}')
-        output_line = str(n) + separator + lin.category
-    print('END DEBUG\n')
+    # print('DEBUG:')
+    # for n, lin in enumerate(raw_list):
+    #     print(f'    {n}{separator}{lin.category}, {lin.text}')
+    #     output_line = str(n) + separator + lin.category
+    # print('END DEBUG\n')
 
     text_main = top2.winfo_children()[0].winfo_children()[0]
     text_main.delete('1.0', 'end')
@@ -168,27 +174,18 @@ def move_text() -> None:
     linenum = 1
     for n, i in enumerate(raw_list):
         if i == '':
-            # if raw_list[n].category == '':
-            #     # text_main.insert('end', '\n')
-            #     pass
-            # else:
-            #     if raw_list[n].text == '-':
-            #         text_main.insert('end', indicator)
-            #         # text_main.insert('end', '\n')
             if raw_list[n].text == '-':
                 text_main.insert('end', indicator)
-                # text_main.insert('end', '\n')
         else:
             if raw_list[n].category != '':
                 output_line = str(n + 1) + indicator + i.category + separator + i.text
 
                 text_main.insert('end', output_line)
-                # text_main.insert('end', '\n')
                 linenum += 1
         text_main.insert('end', '\n')
 
 
-def sort_category() -> None:
+def sort_category_orig() -> None:
     """Sort a list of text lines.
 
     Lines are of the format 'line_number-category: text'
@@ -196,15 +193,22 @@ def sort_category() -> None:
     """
     global text_main
 
+    print('in sort_category...')
+
     alltext = text_main.get('1.0', 'end-1c')
+    # print(f'    alltext:\n    {alltext}')
     line_list = alltext.split('\n')
+    print(f'    line_list:\n    {line_list}')
 
     # may use a list of categories in the future
     # ...regex may be a better tool, but trades off complexity.
     # category_list = [line.split('-')[1].split(':')[0] for line in line_list[:-1]]
 
-    line_list_unnum = [line.split('-')[1] for line in line_list[:-1]]
+    # line_list_unnum = [line.split('-')[1] for line in line_list[:-1]]
+    line_list_unnum = [line.split(': ')[1] for line in line_list[:-1]]
+    print(f'    line_list_unnum:\n    {line_list_unnum}')
     sort_cat_list = sorted(line_list_unnum)
+    print(f'    sort_cat_list:\n    {sort_cat_list}')
     text_main.delete('1.0', 'end')
 
     linenum = 1
@@ -213,6 +217,30 @@ def sort_category() -> None:
         text_main.insert('end', st)
         text_main.insert('end', '\n')
         linenum += 1
+
+
+def sort_category() -> None:
+    """Sort a list of text lines.
+
+    Lines are of the format 'line_number-category: text'
+    Text is user-entered contents of an Entry
+    """
+    global main_list_fr    # could be passed in via a lambda callback
+
+    print('in sort_category...')
+
+    source_frame = main_list_fr.winfo_children()
+    raw_list = get_list(source_frame)
+    if len(raw_list) == 1 and raw_list[0].text == '':
+        # no input
+        return
+
+    raw_sort = sorted(raw_list, key=lambda item: item.category)
+
+    # works:
+    print('    sorted by category:')
+    for n, line in enumerate(raw_sort):
+        print(f'    {line.category}, {line.text}')
 
 
 def option2():
@@ -256,6 +284,7 @@ def lineitem_init(i, cat: str, item: str):
 
 categories = ['home', 'work', 'hobby']
 Lineitem = type('Lineitem', (), {"__init__": lineitem_init})
+
 # test passing of functions to the imported module msel
 # my_fxn = None
 # def opt_fxn():
@@ -280,7 +309,14 @@ category_label.pack(anchor='w', padx=15)
 main_list_fr = ttk.Frame(main_fr_label, border=2)
 main_list_fr.pack(padx=10, ipadx=5, ipady=5)
 
-rowframe = msel.init_selection_row(main_list_fr, categories)
+# rowframe = msel.init_selection_row(main_list_fr, categories)
+# works, set class attribute (for all row objects):
+setattr(msel.MultiSelectFrame, 'padding', 0)
+rowframe = msel.MultiSelectFrame(main_list_fr,
+                                 cb_values=categories,
+                                 name='row1',
+                                 posn=[0,0],
+                                 )
 
 btn_sort = ttk.Button(root,
                       text='Move Text',

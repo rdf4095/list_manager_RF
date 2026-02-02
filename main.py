@@ -39,10 +39,7 @@ history:
 01-14-2026  Code a method to sort text lines by category.
 01-15-2026  Remove old function versions.
 01-27-2026  Implement cnf (configuration dict) for some pack() steps.
-"""
-"""
-TODO: 
-    1. ? can spacing be standardized enough for additonal cnfs.
+02-02-2026  Implement subsort category / text item.
 """
 
 import tkinter as tk

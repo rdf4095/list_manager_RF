@@ -37,11 +37,12 @@ history:
 12-19-2025  Refactor get_list() to directly get text from all list widgets, as
             list of dicts; refactor move_text() to handle this list.
 01-14-2026  Code a method to sort text lines by category.
+01-15-2026  Remove old function versions.
+01-27-2026  Implement cnf (configuration dict) for some pack() steps.
 """
 """
 TODO: 
-    1. Put common pack() spacing into a cnf dict.
-    2. In move_text(), if no item text, don't move it to the format window.
+    1. ? can spacing be standardized enough for additonal cnfs.
 """
 
 import tkinter as tk
@@ -53,43 +54,18 @@ from ttkthemes import ThemedTk
 msel = SourceFileLoader("msel", "../utilities/tool_classes.py").load_module()
 sttk = SourceFileLoader("styles_ttk", "../styles/styles_ttk.py").load_module()
 
-
-def get_list_orig(source: list, wid: str) -> list:
-    """Get contents for a list of widgets of class wid."""
-    list_item = 0
-    print(f'in get_list...')
-    # print(f'{len(source)=}')
-    for index, item in enumerate(source):
-        # print(f'{index=}')
-        item_type = type(item.winfo_children()[index]).__name__
-        # print(f'    {len(item.winfo_children())=}')
-        # print(f'    {item=}, {item_type=}, {wid=}')
-        print(f'    {item=}')
-
-        if type(item.winfo_children()[index]).__name__ == wid:
-            list_item = index
-    # print(f'    {type(source[0].winfo_children())=}')
-
-    # works:  start to replace the logic above...
-    # we can use child.get() for each widget to get the text value
-    temp_list = [child for child in item.winfo_children()[:-2] for item in source]
-    print(f'{temp_list=}')
-
-    the_list = [item.winfo_children()[list_item].get() for item in source]
-
-    return the_list
-
-
-def get_list(source: list) -> list:
+def get_list(source: list) -> list | None:
     """Get contents for a list of widgets of class wid."""
     if len(source) == 0:
         return
 
-    print(f'in get_list...')
+    # print(f'in get_list...')
 
+    # This syntax depends on knowing that we need to skip the last 2 widgets.
+    # To generalize this function, the '2' would be a value passed in.
     rows = [item.winfo_children()[:-2] for item in source]
 
-    # a model of the form for list flattening
+    # A model of the form for using a comprehension to flatten a list.
     # output = [i for subrow in rows for i in subrow]
     # works:
     # test_list = [i.get() for row in rows for i in row]
@@ -99,85 +75,69 @@ def get_list(source: list) -> list:
     for row in rows:
         l = Lineitem(row[0].get(), row[1].get())
         the_list.append(l)
-    # for lin in the_list:
-    #     print(f'    {lin.category}, {lin.text}')
 
     return the_list
 
 
-def move_text_orig() -> None:
-    """Get text from widgets and move it to another toplevel window."""
-    global main_list_fr
-    global top2
-
-    source = main_list_fr.winfo_children()
-
-    category_list = get_list(source, 'Combobox')
-    text_list = get_list(source, 'Entry')
-
-    # print(f'{category_list=}')
-    # print(f'{text_list=}')
-    text_main = top2.winfo_children()[0].winfo_children()[0]
-    text_main.delete('1.0', 'end')
-
-    linenum = 1
-    for n, i in enumerate(category_list):
-        separator = '--'
-
-        if i == '':
-            if text_list[n] == '':
-                text_main.insert('end', '\n')
-            else:
-                if text_list[n] == '-':
-                    text_main.insert('end', separator)
-                    text_main.insert('end', '\n')
-        else:
-            if text_list[n] != '':
-                print(f'    {i=}, {text_list[n]=}')
-                st = str(linenum) + "-" + i +  ": " + text_list[n]
-                # print(f'    {st=}')
-                text_main.insert('end', st)
-                text_main.insert('end', '\n')
-                linenum += 1
-
-
 def move_text() -> None:
     """Get text from widgets and move it to another toplevel window."""
-    # TODO: extract the code that puts text into window 2, into a function.
-    #       This is needed again for the sort.
+    # NOTES:
+    # Don't need the global keyword unless the module-level variable is being assigned.
+    # Nevertheless, it is an indicator that another scope is being used.
+    # consider the following alternate form, defined outside of any function:
+    # use 'this' as a pointer to the module object instance itself. 'this' is an arbitrary name.
+    #     this = sys.modules[__name__]
+    #
+    # can explicitly make assignments on it
+    #     this.my_var = "default"
+    #
+    # ...whether 'this' or 'global', these could be module vars:
+    #     'indicator', 'separator', 'top2', 'text_main'
+
     global main_list_fr
     global top2
 
-    source = main_list_fr.winfo_children()
+    source_wid_list = main_list_fr.winfo_children()
 
-    print()
-    print('in move_text...')
-
-    indicator = "--"
-    separator = ": "
-    raw_list = get_list(source)
+    # module variables
+    # indicator = "--"
+    # separator = ": "
+    raw_list = get_list(source_wid_list)
 
     if len(raw_list) == 1 and raw_list[0].text == '':
         # no input
         return
 
-    # debug:
-    # print('DEBUG:')
-    # for n, lin in enumerate(raw_list):
-    #     print(f'    {n}{separator}{lin.category}, {lin.text}')
-    #     output_line = str(n) + separator + lin.category
-    # print('END DEBUG\n')
-
+    # get the Text widget in the first Frame widget
     text_main = top2.winfo_children()[0].winfo_children()[0]
+    # alt method:
+    # frames = [w for w in top2.winfo_children() if w.__class__ == ttk.LabelFrame]
+    frames = [w for w in top2.winfo_children() if w.__class__ == ttk.Frame]
+
+
+    # print(f'    {frames=}')
+    textw = [w for w in frames[0].winfo_children() if w.__class__ == tk.Text]
+    # print(f'    {textw=}')
+
     text_main.delete('1.0', 'end')
 
+    write_text(raw_list, indicator, separator, text_main)
+
+
+# def write_text(raw_list, indicator, separator, text_main):
+def write_text(the_list: list,
+               indicator: str,
+               separator: str,
+               text_main: 'tk.Text'):
     linenum = 1
-    for n, i in enumerate(raw_list):
+    # print(f'{type(text_main)=}')
+    # print(f'{text_main.__class__=}')
+    for n, i in enumerate(the_list):
         if i == '':
-            if raw_list[n].text == '-':
+            if the_list[n].text == '-':
                 text_main.insert('end', indicator)
         else:
-            if raw_list[n].category != '':
+            if the_list[n].category != '':
                 output_line = str(n + 1) + indicator + i.category + separator + i.text
 
                 text_main.insert('end', output_line)
@@ -185,75 +145,74 @@ def move_text() -> None:
         text_main.insert('end', '\n')
 
 
-def sort_category_orig() -> None:
+def sort_by_category() -> None:
     """Sort a list of text lines.
 
-    Lines are of the format 'line_number-category: text'
+    Lines are of the format 'linenumber-category: text'
     Text is user-entered contents of an Entry
     """
-    global text_main
+    # See note above on 'global'.
+    # This one could also be passed in via a lambda callback.
+    global main_list_fr
 
-    print('in sort_category...')
+    # After the first line, remove category text
+    trim_cat = True
 
-    alltext = text_main.get('1.0', 'end-1c')
-    # print(f'    alltext:\n    {alltext}')
-    line_list = alltext.split('\n')
-    print(f'    line_list:\n    {line_list}')
-
-    # may use a list of categories in the future
-    # ...regex may be a better tool, but trades off complexity.
-    # category_list = [line.split('-')[1].split(':')[0] for line in line_list[:-1]]
-
-    # line_list_unnum = [line.split('-')[1] for line in line_list[:-1]]
-    line_list_unnum = [line.split(': ')[1] for line in line_list[:-1]]
-    print(f'    line_list_unnum:\n    {line_list_unnum}')
-    sort_cat_list = sorted(line_list_unnum)
-    print(f'    sort_cat_list:\n    {sort_cat_list}')
-    text_main.delete('1.0', 'end')
-
-    linenum = 1
-    for i in enumerate(sort_cat_list):
-        st = str(linenum) + "-" + i[1]
-        text_main.insert('end', st)
-        text_main.insert('end', '\n')
-        linenum += 1
-
-
-def sort_category() -> None:
-    """Sort a list of text lines.
-
-    Lines are of the format 'line_number-category: text'
-    Text is user-entered contents of an Entry
-    """
-    global main_list_fr    # could be passed in via a lambda callback
-
-    print('in sort_category...')
-
-    source_frame = main_list_fr.winfo_children()
-    raw_list = get_list(source_frame)
+    source_wid_list = main_list_fr.winfo_children()
+    raw_list = get_list(source_wid_list)
     if len(raw_list) == 1 and raw_list[0].text == '':
         # no input
         return
+    # print(f'{len(raw_list)=}')
 
-    raw_sort = sorted(raw_list, key=lambda item: item.category)
+    # raw_sort = sorted(raw_list, key=lambda item: item.category)
+    sorted_list = []
+    categories_sorted = sorted(categories)
+    for c in categories_sorted:
+        items = [i for i in raw_list if i.category == c]
+        # TODO: exit enum if no items for this category
+        print(f'items in category {c}: {len(items)}')
+        if len(items) == 0:
+            continue
+        sorted_list.append(items[0])
+        print(f'{items[0]}')
+        for n, line in enumerate(items[1:]):
+            if trim_cat:
+                line.category = ' ' * len(line.category)
+                print(f'    {line.category=}, {line.text=}')
+            sorted_list.append(line)
 
-    # works:
-    print('    sorted by category:')
-    for n, line in enumerate(raw_sort):
-        print(f'    {line.category}, {line.text}')
+    text_main = top2.winfo_children()[0].winfo_children()[0]
+    text_main.delete('1.0', 'end')
+
+    write_text(sorted_list, indicator, separator, text_main)
 
 
 def option2():
-    # future
-    print('in option2')
+    source_wid_list = main_list_fr.winfo_children()
+    raw_list = get_list(source_wid_list)
+
+    sorted_list = []
+    categories_sorted = sorted(categories)
+    for c in categories_sorted:
+        items = [i for i in raw_list if i.category == c]
+        items_sorted = sorted(items, key=lambda item: item.text)
+        for n, line in enumerate(items_sorted):
+            # print(f'    {line.category}, {line.text}')
+            sorted_list.append(line)
+
+    text_main = top2.winfo_children()[0].winfo_children()[0]
+    text_main.delete('1.0', 'end')
+
+    write_text(sorted_list, indicator, separator, text_main)
 
 
 def set_window_offset(reference):
-    """Calculate window position, as x-y offset from a reference window."""
+    """Calculate window position, as offset from a reference window."""
     top2_width = reference[0]
     top2_height = reference[1].split('+')[0]
     h_offset = reference[1].split('+')[1]
-    v_offset = reference[1].split('+')[2]
+    v_offset = reference[1].split('+')[2]      # not currently used
 
     top2_h_offset = str(int(top2_width) + int(h_offset) + 40)
     top2_v_offset = top2_height
@@ -264,9 +223,13 @@ def set_window_offset(reference):
 # Module scope objects
 # ====================
 root = ThemedTk()
-root.title('list manager')
+# root.title('list manager')
+root.title('Create List')
 
 sttk.create_styles()
+
+cnf1 = {'padx':5, 'pady':5}
+cnf2 = {'anchor': 'w', 'padx': 15}
 
 # for how this flag might be used, see the project pandas_data_RF
 use_pandas = False
@@ -285,33 +248,44 @@ def lineitem_init(i, cat: str, item: str):
 categories = ['home', 'work', 'hobby']
 Lineitem = type('Lineitem', (), {"__init__": lineitem_init})
 
+# test type:
+# ii_one = Lineitem('home', 'item 1 home')
+# print(f'{ii_one.category=}, {ii_one.text}')
+
+indicator = "--"
+separator = ": "
+
 # test passing of functions to the imported module msel
 # my_fxn = None
 # def opt_fxn():
 #      print('in opt_fxn')
 
-# test type:
-# ii_one = Lineitem('home', 'item 1 home')
-# print(f'{ii_one.category=}, {ii_one.text}')
-
 # main_lab = ttk.Label(root, foreground='blue', border=2, text='Create List')
 # main_lab.pack(anchor='w', padx=5)
-main_lab = ttk.Label(root, text="Create List", style="LabelFrameText.TLabel")
-main_fr_label = ttk.LabelFrame(root, labelwidget=main_lab)
-main_fr_label.pack(padx=5, pady=5)
+
+# needed?
+# main_lab = ttk.Label(root, text="Create List", style="LabelFrameText.TLabel")
+
+# main_fr_label = ttk.LabelFrame(root, labelwidget=main_lab)
+main_fr_label = ttk.Frame(root)#, name="entry_frame")
+
+
+# main_fr_label.pack(padx=5, pady=5)
+main_fr_label.pack(cnf1)
 
 # ? do we need this
 # category_label = ttk.Label(root, background='#ff0', text='category')
 category_label = ttk.Label(main_fr_label, background='#ff0', text='category')
-category_label.pack(anchor='w', padx=15)
+# category_label.pack(anchor='w', padx=15)
+category_label.pack(cnf=cnf2)
 
 # main_list_fr = ttk.Frame(root, border=2)
 main_list_fr = ttk.Frame(main_fr_label, border=2)
 main_list_fr.pack(padx=10, ipadx=5, ipady=5)
 
-# rowframe = msel.init_selection_row(main_list_fr, categories)
-# works, set class attribute (for all row objects):
+# Set class attribute (for all row (MultiSelectFrame) objects):
 setattr(msel.MultiSelectFrame, 'padding', 0)
+
 rowframe = msel.MultiSelectFrame(main_list_fr,
                                  cb_values=categories,
                                  name='row1',
@@ -334,28 +308,35 @@ root_geometry = root.geometry().split('x')
 # Toplevel window 2
 # =================
 top2 = tk.Toplevel()
-top2.title('list viewer')
+# top2.title('list viewer')
+top2.title('Format List')
 
 win2_offset = set_window_offset(root_geometry)
 top2.geometry(win2_offset)
 
-lab2 = ttk.Label(top2, text="Formatted List", style="LabelFrameText.TLabel")
-format_fr_label = ttk.LabelFrame(top2, labelwidget=lab2)
-format_fr_label.pack(padx=5, pady=5)
+# lab2 = ttk.Label(top2, text="Format List", style="LabelFrameText.TLabel")
+# format_list_fr = ttk.LabelFrame(top2, labelwidget=lab2)#, name="format_frame")
+format_list_fr = ttk.Frame(top2)#, name="format_frame")
 
-# frr = ttk.LabelFrame()
+
+# format_list_fr.pack(padx=5, pady=5)
+format_list_fr.pack(cnf1)
 
 options_fr = ttk.Frame(top2, relief='groove')
-options_fr.pack(padx=5, pady=5)
+# options_fr.pack(padx=5, pady=5)
+options_fr.pack(cnf1)
 
-opt1_but = ttk.Button(options_fr, text="sort category", command=sort_category)
-opt1_but.pack(side='left', padx=5, pady=5)
+opt1_but = ttk.Button(options_fr, text="sort category", command=sort_by_category)
+# opt1_but.pack(side='left', padx=5, pady=5)
+opt1_but.pack(cnf1, side='left')
 
-opt2_but = ttk.Button(options_fr, text="option 2", command=option2)
-opt2_but.pack(side='left', padx=5, pady=5)
+opt2_but = ttk.Button(options_fr, text="subsort", command=option2)
+# opt2_but.pack(side='left', padx=5, pady=5)
+opt2_but.pack(cnf1, side='left')
 
-text_main = tk.Text(format_fr_label, width=40, height=10, background='#ffa')
-text_main.pack(padx=5, pady=5)
+text_main = tk.Text(format_list_fr, width=40, height=10, background='#ffa')#, name="formatted_text")
+# text_main.pack(padx=5, pady=5)
+text_main.pack(cnf1)
 
 # report function signatures. ----------
 # import inspect

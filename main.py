@@ -40,6 +40,7 @@ history:
 01-15-2026  Remove old function versions.
 01-27-2026  Implement cnf (configuration dict) for some pack() steps.
 02-02-2026  Implement subsort category / text item.
+02-05-2026  Combine sort and subsort functions into one.
 """
 
 import tkinter as tk
@@ -142,7 +143,7 @@ def write_text(the_list: list,
         text_main.insert('end', '\n')
 
 
-def sort_by_category() -> None:
+def sort_by_category(subsort=False) -> None:
     """Sort a list of text lines.
 
     Lines are of the format 'linenumber-category: text'
@@ -167,35 +168,21 @@ def sort_by_category() -> None:
     categories_sorted = sorted(categories)
     for c in categories_sorted:
         items = [i for i in raw_list if i.category == c]
-        # TODO: exit enum if no items for this category
-        print(f'items in category {c}: {len(items)}')
         if len(items) == 0:
             continue
-        sorted_list.append(items[0])
-        print(f'{items[0]}')
-        for n, line in enumerate(items[1:]):
+
+        # try
+        if subsort:
+            items_sorted = sorted(items, key=lambda item: item.text)
+        else:
+            items_sorted = items
+
+        # sorted_list.append(items[0])
+        # try
+        sorted_list.append(items_sorted[0])
+        for n, line in enumerate(items_sorted[1:]):
             if trim_cat:
                 line.category = ' ' * len(line.category)
-                print(f'    {line.category=}, {line.text=}')
-            sorted_list.append(line)
-
-    text_main = top2.winfo_children()[0].winfo_children()[0]
-    text_main.delete('1.0', 'end')
-
-    write_text(sorted_list, indicator, separator, text_main)
-
-
-def option2():
-    source_wid_list = main_list_fr.winfo_children()
-    raw_list = get_list(source_wid_list)
-
-    sorted_list = []
-    categories_sorted = sorted(categories)
-    for c in categories_sorted:
-        items = [i for i in raw_list if i.category == c]
-        items_sorted = sorted(items, key=lambda item: item.text)
-        for n, line in enumerate(items_sorted):
-            # print(f'    {line.category}, {line.text}')
             sorted_list.append(line)
 
     text_main = top2.winfo_children()[0].winfo_children()[0]
@@ -327,7 +314,7 @@ opt1_but = ttk.Button(options_fr, text="sort category", command=sort_by_category
 # opt1_but.pack(side='left', padx=5, pady=5)
 opt1_but.pack(cnf1, side='left')
 
-opt2_but = ttk.Button(options_fr, text="subsort", command=option2)
+opt2_but = ttk.Button(options_fr, text="subsort", command=lambda s=True: sort_by_category(s))
 # opt2_but.pack(side='left', padx=5, pady=5)
 opt2_but.pack(cnf1, side='left')
 
